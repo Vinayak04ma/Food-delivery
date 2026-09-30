@@ -1,13 +1,13 @@
-import { Plus, Heart } from 'lucide-react';
+import { Plus, Zap, Heart } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
-import Button from '../common/Button';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToWishlist, removeFromWishlist } from '../../store/slices/wishlistSlice';
+import { addToCart } from '../../store/slices/cartSlice';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-const FoodCard = ({ food, onAddToCart, compact = false }) => {
+const FoodCard = ({ food, onAddToCart, onDirectBuy, compact = false }) => {
   const { id, name, description, price, imageUrl, available, veg, category } = food;
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -40,6 +40,25 @@ const FoodCard = ({ food, onAddToCart, compact = false }) => {
         .then(() => toast.success('Added to wishlist! 💜'))
         .catch((err) => toast.error(err));
     }
+  };
+
+  const handleDefaultDirectBuy = () => {
+    if (!isAuthenticated) {
+      toast.error('Please login first to checkout');
+      navigate('/login');
+      return;
+    }
+    if (!isCustomer) {
+      toast.error('Only customers can purchase items');
+      return;
+    }
+    dispatch(addToCart({ foodItemId: id, quantity: 1 }))
+      .unwrap()
+      .then(() => {
+        toast.success('Proceeding to checkout! 🚀');
+        navigate('/cart');
+      })
+      .catch((err) => toast.error(err));
   };
 
   return (
@@ -117,18 +136,45 @@ const FoodCard = ({ food, onAddToCart, compact = false }) => {
           )}
         </div>
         
-        <div className="flex items-center justify-between mt-auto pt-4 border-t" style={{ borderColor: 'var(--color-border-light)' }}>
+        <div className="flex items-center justify-between mt-auto pt-4 border-t gap-2" style={{ borderColor: 'var(--color-border-light)' }}>
           <span className="text-xl font-black" style={{ color: 'var(--color-text-primary)' }}>
             {formatCurrency(price)}
           </span>
-          {available !== false && onAddToCart && (
-            <Button
-              size="sm"
-              className="rounded-xl shadow-md hover:shadow-lg transition-all"
-              onClick={() => onAddToCart({ foodItemId: id, quantity: 1 })}
-            >
-              <Plus className="w-4 h-4 mr-1" /> Add
-            </Button>
+          {available !== false && (
+            <div className="flex items-center gap-1.5">
+              {onAddToCart && (
+                <button
+                  type="button"
+                  title="Add to Cart"
+                  className="px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: 'var(--color-surface-hover)',
+                    color: 'var(--color-text-primary)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                  onClick={() => onAddToCart({ foodItemId: id, quantity: 1 })}
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                </button>
+              )}
+              <button
+                type="button"
+                title="Direct Buy / Order Now"
+                className="px-3.5 py-2 rounded-xl text-xs font-black text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
+                }}
+                onClick={() => {
+                  if (onDirectBuy) {
+                    onDirectBuy({ foodItemId: id, quantity: 1 });
+                  } else {
+                    handleDefaultDirectBuy();
+                  }
+                }}
+              >
+                <Zap className="w-3.5 h-3.5 mr-1 fill-amber-300 text-amber-300" /> Buy Now
+              </button>
+            </div>
           )}
         </div>
       </div>

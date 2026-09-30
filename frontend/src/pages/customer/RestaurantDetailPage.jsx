@@ -39,6 +39,18 @@ const RestaurantDetailPage = () => {
       .catch((err) => toast.error(err));
   };
 
+  const handleDirectBuy = (data) => {
+    if (!isAuthenticated) { toast.error('Please login first to checkout'); navigate('/login'); return; }
+    if (!isCustomer) { toast.error('Only customers can purchase items'); return; }
+    dispatch(addToCart(data))
+      .unwrap()
+      .then(() => {
+        toast.success('Proceeding to checkout! 🚀');
+        navigate('/cart');
+      })
+      .catch((err) => toast.error(err));
+  };
+
   const filteredFoods = foods.filter((f) => {
     const matchCat = !activeCategory || f.category === activeCategory;
     const matchSearch = !searchQuery || f.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -177,7 +189,12 @@ const RestaurantDetailPage = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 stagger-children">
             {filteredFoods.map((food) => (
-              <FoodCard key={food.id} food={food} onAddToCart={handleAddToCart} />
+              <FoodCard
+                key={food.id}
+                food={food}
+                onAddToCart={handleAddToCart}
+                onDirectBuy={handleDirectBuy}
+              />
             ))}
           </div>
         )}
